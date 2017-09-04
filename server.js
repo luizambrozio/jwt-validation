@@ -46,7 +46,7 @@ console.log('Magic happens at http://localhost:' + port);
 //==============rotas==============
 
 app.post('/signin', function(req, res) {
-    User.findOne({email: req.body.name, password: req.body.password}, function(err, user) {
+    User.findOne({name: req.body.name, password: req.body.password}, function(err, user) {
         if (err) {
             res.json({
                 type: false,
@@ -60,14 +60,14 @@ app.post('/signin', function(req, res) {
                 });
             } else {
                 var userModel = new User();
-                userModel.email = req.body.name;
+                userModel.name = req.body.name;
                 userModel.password = req.body.password;
                 userModel.save(function(err, user) {
                     let payLoad = {
-                        email : user.name,
+                        name : user.name,
                         exp : Math.floor(Date.now() / 1000) + (30*60)
                     }
-                    user.token = jwt.sign(payLoad, JWT_SECRET);
+                    user.token = jwt.sign(payLoad, app.get('superSecret'));
                     user.save(function(err, user1) {
                         res.json({
                             type: true,
@@ -89,6 +89,8 @@ var apiRoutes = express.Router();
 
 // TODO: route to authenticate a user (POST http://localhost:8080/api/authenticate)
 
+// apply the routes to our application with the prefix /api
+app.use('/api', apiRoutes);
 
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
 apiRoutes.post('/authenticate', function(req, res) {
@@ -183,5 +185,4 @@ apiRoutes.get('/users', function(req, res) {
   });
 });
 
-// apply the routes to our application with the prefix /api
-app.use('/api', apiRoutes);
+
