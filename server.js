@@ -45,22 +45,40 @@ console.log('Magic happens at http://localhost:' + port);
 
 //==============rotas==============
 
-app.get('/setup', function(req, res) {
-
-  // create a sample user
-  var nick = new User({
-    name: 'ambrozio',
-    password: '123',
-    admin: true
-  });
-
-  // save the sample user
-  nick.save(function(err) {
-    if (err) throw err;
-
-    console.log('User saved successfully');
-    res.json({ success: true });
-  });
+app.post('/signin', function(req, res) {
+    User.findOne({email: req.body.name, password: req.body.password}, function(err, user) {
+        if (err) {
+            res.json({
+                type: false,
+                data: "Error occured: " + err
+            });
+        } else {
+            if (user) {
+                res.json({
+                    type: false,
+                    data: "Usuario ja cadastrado!"
+                });
+            } else {
+                var userModel = new User();
+                userModel.email = req.body.name;
+                userModel.password = req.body.password;
+                userModel.save(function(err, user) {
+                    let payLoad = {
+                        email : user.name,
+                        exp : Math.floor(Date.now() / 1000) + (30*60)
+                    }
+                    user.token = jwt.sign(payLoad, JWT_SECRET);
+                    user.save(function(err, user1) {
+                        res.json({
+                            type: true,
+                            data: user1,
+                            token: user1.token
+                        });
+                    });
+                })
+            }
+        }
+    });
 });
 
 
@@ -74,7 +92,6 @@ var apiRoutes = express.Router();
 
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
 apiRoutes.post('/authenticate', function(req, res) {
-
   // find the user
   User.findOne({
     name: req.body.name
@@ -92,14 +109,25 @@ apiRoutes.post('/authenticate', function(req, res) {
       } else {
 
         // if user is found and password is right
+        let payLoad = {
+                           name : user.name,
+                           _id : user._id,
+                           exp : Math.floor(Date.now() / 1000) + (30*60)
+                       }
         // create a token
-        var token = jwt.sign(user, app.get('superSecret'));
+        var token = jwt.sign(payLoad, app.get('superSecret'));
+
+        user.token = token
+
+        user.save(function(err, user1) {
+          console.log(user1);
+        });
 
         // return the information including token as JSON
         res.json({
           success: true,
           message: 'Enjoy your token!',
-          token: token
+          token: user.token
         });
       }
 
@@ -107,7 +135,6 @@ apiRoutes.post('/authenticate', function(req, res) {
 
   });
 });
-
 
 
 // TODO: route middleware to verify a token
@@ -120,8 +147,8 @@ apiRoutes.use(function(req, res, next) {
 
   // decode token
   if (token) {
-
     // verifies secret and checks exp
+
     jwt.verify(token, app.get('superSecret'), function(err, decoded) {
       if (err) {
         return res.json({ success: false, message: 'Failed to authenticate token.' });
