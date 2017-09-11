@@ -116,10 +116,11 @@ app.use('/api', apiRoutes);
 // route to authenticate a user (POST http://localhost:8080/api/authenticate)
 apiRoutes.post('/authenticate', function(req, res) {
   // find the user
+  //let params = JSON.parse(req.body.email);
+  console.log('cheguei no autencicate '+req.body.email)
   User.findOne({
-    name: req.body.name
+    name: req.body.email
   }, function(err, user) {
-
     if (err) throw err;
 
     if (!user) {
@@ -128,6 +129,7 @@ apiRoutes.post('/authenticate', function(req, res) {
 
       // check if password matches
       if (user.password != req.body.password) {
+        console.log('Authentication failed. Wrong password. => ')
         res.json({ success: false, message: 'Authentication failed. Wrong password.' });
       } else {
 
@@ -147,6 +149,7 @@ apiRoutes.post('/authenticate', function(req, res) {
         });
 
         // return the information including token as JSON
+        console.log('Enjoy your token!')
         res.json({
           success: true,
           message: 'Enjoy your token!',
