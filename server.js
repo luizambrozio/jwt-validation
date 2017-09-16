@@ -68,8 +68,8 @@ console.log('Magic happens at http://localhost:' + port);
 
 //==============rotas==============
 
-app.post('/signin', function(req, res) {
-    User.findOne({name: req.body.name, password: req.body.password}, function(err, user) {
+app.post('/signup', function(req, res) {
+    User.findOne({email: req.body.email, password: req.body.password}, function(err, user) {
         if (err) {
             res.json({
                 type: false,
@@ -83,12 +83,16 @@ app.post('/signin', function(req, res) {
                 });
             } else {
                 var userModel = new User();
-                userModel.name = req.body.name;
+                userModel.email = req.body.email;
+                userModel.firstName = req.body.firstName;
+                userModel.lastName = req.body.lastName;
+                userModel.username = req.body.username;
                 userModel.password = req.body.password;
                 userModel.save(function(err, user) {
                     let payLoad = {
-                        name : user.name,
-                        exp : Math.floor(Date.now() / 1000) + (30*60)
+                      username : user.username,
+                      email : user.email,
+                      exp : Math.floor(Date.now() / 1000) + (30*60)
                     }
                     user.token = jwt.sign(payLoad, app.get('superSecret'));
                     user.save(function(err, user1) {
@@ -121,7 +125,7 @@ apiRoutes.post('/authenticate', function(req, res) {
   //let params = JSON.parse(req.body.email);
   console.log('cheguei no autencicate '+req.body.email)
   User.findOne({
-    name: req.body.email
+    email: req.body.email
   }, function(err, user) {
     if (err) throw err;
 
@@ -137,10 +141,10 @@ apiRoutes.post('/authenticate', function(req, res) {
 
         // if user is found and password is right
         let payLoad = {
-                           name : user.name,
-                           _id : user._id,
-                           exp : Math.floor(Date.now() / 1000) + (30*60)
-                       }
+          email : user.email,
+          _id : user._id,
+          exp : Math.floor(Date.now() / 1000) + (30*60)
+          }
         // create a token
         var token = jwt.sign(payLoad, app.get('superSecret'));
 
@@ -155,7 +159,8 @@ apiRoutes.post('/authenticate', function(req, res) {
         res.json({
           success: true,
           message: 'Enjoy your token!',
-          token: user.token
+          token: user.token,
+          username: user.username
         });
       }
 
